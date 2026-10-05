@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LuckyStar — Seapunk Location</title>
+    <script src="https://telegram.org"></script>
+    <style>
+        /* Глобальные настройки Vaporwave */
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow-x: hidden; overflow-y: auto;
+            background: linear-gradient(180deg, #10122c 0%, #0d1a3a 50%, #062b49 100%);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+            overscroll-behavior: none; user-select: none; -webkit-user-select: none;
+        }
+
+        .app-container {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 16px; padding-top: calc(12px + env(safe-area-inset-top));
+            padding-bottom: calc(90px + env(safe-area-inset-bottom));
+            box-sizing: border-box;
+        }
+
+        .app-screen { width: 100%; display: none; }
+        .app-screen.active { display: block; }
+
+        /* Шапка с аниме и монитором */
+        .hero-section {
+            width: 100%; text-align: left; position: relative; margin-bottom: 16px;
+            border-radius: 20px; padding: 24px; box-sizing: border-box; overflow: hidden;
+            background: linear-gradient(180deg, rgba(235, 114, 211, 0.4) 0%, rgba(13, 26, 58, 0.7) 100%), 
+                        url('https://postimg.cc') center/cover;
+            border: 2px solid #eb72d3;
+            box-shadow: 0 0 25px rgba(235, 114, 211, 0.4);
+        }
+        .main-title { 
+            font-size: 42px; font-weight: 900; line-height: 0.9; margin: 0; 
+            letter-spacing: 0.5px; color: #ffffff;
+            text-shadow: 0 0 10px #eb72d3, 0 0 20px #00ffff;
+        }
+        .season-tag { 
+            font-size: 13px; color: #ffffff; margin-top: 10px; font-weight: bold; 
+            font-style: italic; background: #9370db; display: inline-block; 
+            padding: 4px 10px; border-radius: 6px; text-transform: lowercase;
+        }
+
+        /* Карточка NFT STAR (Статуя в океане) */
+        .nft-star-card {
+            width: 100%; height: 130px; margin-bottom: 16px; border-radius: 24px;
+            border: 2px solid #00bfff; overflow: hidden; position: relative;
+            background: url('https://postimg.cc') center/cover;
+            box-shadow: 0 0 25px rgba(0, 191, 255, 0.4);
+            display: flex; align-items: center; padding: 20px; box-sizing: border-box;
+        }
+        .nft-star-card::before {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            background: linear-gradient(90deg, rgba(147,112,219,0.7) 0%, rgba(0,191,255,0.3) 100%);
+        }
+        .nft-star-text {
+            position: relative; z-index: 2; font-size: 32px; font-weight: 900;
+            font-style: italic; text-transform: uppercase; color: #00ffff;
+            text-shadow: 2px 2px 0px #ff69b4, 0 0 15px rgba(0,255,255,0.8);
+        }
+
+        /* Главное игровое окно со статуей Будды */
+        .slot-window {
+            width: 100%; height: 160px; border-radius: 24px;
+            border: 2px solid #ff69b4; overflow: hidden; display: flex; 
+            justify-content: center; align-items: center; margin-bottom: 16px; 
+            position: relative; box-shadow: 0 0 25px rgba(255, 105, 180, 0.4);
+            background: #000;
+        }
+        .reel-viewport { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        .reel-image { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Кнопка КРУТИ!! с перламутровым градиентом */
+        .btn-premium-spin {
+            width: 100%; padding: 18px; border: 2px solid #ffffff; border-radius: 20px;
+            font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 6px;
+            color: #ffffff; cursor: pointer; transition: all 0.2s ease;
+            background: linear-gradient(90deg, #ffb6c1 0%, #da70d6 50%, #87cefa 100%);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5), 0 0 10px #ffffff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255,255,255,0.5);
+            -webkit-tap-highlight-color: transparent; margin-bottom: 14px;
+        }
+        .btn-premium-spin:active { transform: scale(0.97); filter: brightness(1.2); }
+        .btn-premium-spin:disabled { background: #151a2e; color: #434b6e; box-shadow: none; border: 2px solid #283154; }
+
+        /* Кнопка дополнительной попытки */
+        .btn-secondary-stars {
+            width: 100%; padding: 14px; border: 1px solid #00ffff; border-radius: 14px;
+            background: rgba(0, 255, 255, 0.05); color: #00ffff; font-size: 13px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-bottom: 24px;
+            text-shadow: 0 0 5px #00ffff; box-shadow: inset 0 0 10px rgba(0,255,255,0.2);
+        }
+
+        /* Блок возможных призов */
+        .section-title { font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px; color: #ffb6c1; margin: 15px 0 10px 4px; width: 100%; }
+        
+        .prize-item {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; background: rgba(13, 20, 38, 0.6);
+            border: 1px solid rgba(0, 255, 255, 0.2); border-radius: 14px; padding: 12px 16px;
+            box-sizing: border-box; margin-bottom: 8px;
+        }
+        .prize-info { display: flex; align-items: center; gap: 12px; }
+        .prize-image-wrapper { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; border: 1px solid #00bfff; }
+        .prize-img { width: 100%; height: 100%; object-fit: cover; }
+        .prize-name { font-size: 15px; font-weight: 700; }
+
+        /* Нижнее меню */
+        .tab-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: calc(64px + env(safe-area-inset-bottom));
+            background: #090b14; border-top: 1px solid #00ffff;
+            display: flex; justify-content: space-around; align-items: center;
+            padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; z-index: 100;
+        }
+        .tab-item { display: flex; flex-direction: column; align-items: center; color: #434b6e; font-size: 10px; font-weight: 700; text-decoration: none; cursor: pointer; }
+        .tab-item.active { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+        .tab-icon { font-size: 18px; margin-bottom: 3px; }
+        .win-announcement { text-align: center; color: #00ffff; font-size: 16px; font-weight: bold; margin-bottom: 8px; min-height: 20px; text-shadow: 0 0 10px #00ffff; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- ЭКРАН: ГЛАВНАЯ -->
+    <div id="screen-main" class="app-screen active">
+        <!-- Шапка -->
+        <div class="hero-section">
+            <div class="hero-content">
+                <h1 class="main-title">LuckyStar</h1>
+                <div class="season-tag">seapunk location</div>
+            </div>
+        </div>
+
+        <!-- Плашка NFT STAR -->
+        <div class="nft-star-card">
+            <div class="nft-star-text">NFT STAR</div>
+        </div>
+
+        <div class="win-announcement" id="win-message"></div>
+
+        <!-- Барабан (По умолчанию стоит Будда на пляже) -->
+        <div class="slot-window">
+            <div class="reel-viewport">
+                <img src="https://postimg.cc" id="slot-reel" class="reel-image" alt="slot">
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <button class="btn-premium-spin" id="btn-trigger" onclick="startSpinAnimation()">КРУТИ!!</button>
+        <button class="btn-secondary-stars" onclick="simulateStarsPurchase()">ДОПОЛНИТЕЛЬНАЯ ПОПЫТКА • 2 🌟</button>
+        
+        <div class="section-title">Возможные призы</div>
+        <div class="prize-item">
+            <div class="prize-info">
+                <div class="prize-image-wrapper">
+                    <img src="https://postimg.cc" class="prize-img" alt="prize">
+                </div>
+                <div class="prize-name">NFT -- подарок</div>
+            </div>
+            <div style="font-weight:700; color:#00bfff;">1 шт</div>
+        </div>
+    </div>
+
+    <!-- ДРУГИЕ ЭКРАНЫ (ЗАГЛУШКИ) -->
+    <div id="screen-lottery" class="app-screen">
+        <div class="section-title">Розыгрыши</div>
+        <div class="prize-item"><div class="prize-name">Скоро старт новых квестов...</div></div>
+    </div>
+    <div id="screen-prizes" class="app-screen">
+        <div class="section-title">Мои призы</div>
+        <div id="prizes-list-container"></div>
+    </div>
+    <div id="screen-profile" class="app-screen">
+        <div class="section-title">Профиль игрока</div>
+        <div class="prize-item"><div class="prize-name" id="username-display">@Player</div></div>
+    </div>
+
+</div>
+
+<!-- Меню навигации -->
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchScreen('main', this)"><span class="tab-icon">🔮</span>Главная</div>
+    <div class="tab-item" onclick="switchScreen('lottery', this)"><span class="tab-icon">⚔️</span>Розыгрыш</div>
+    <div class="tab-item" onclick="switchScreen('prizes', this)"><span class="tab-icon">💀</span>Мои призы</div>
+    <div class="tab-item" onclick="switchScreen('profile', this)"><span class="tab-icon">🦇</span>Профиль</div>
+</div>
+
+<script>
+// 🔥 ЗАЩИТА: Проверяем, открыта ли игра внутри Telegram
+if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.initData) {
+    // Если открыли в обычном браузере (Safari, Chrome) — полностью блокируем экран
+    document.body.innerHTML = `
+        <div style="
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            background: #0f1123; 
+            color: #ff69b4; 
+            font-family: sans-serif; 
+            text-align: center; 
+            padding: 20px;
+            box-sizing: border-box;
+        ">
+            <h1 style="font-size: 40px; margin-bottom: 10px;">🔮</h1>
+            <h2 style="text-shadow: 0 0 10px #ff69b4;">ДОСТУП ОГРАНИЧЕН</h2>
+            <p style="color: #00ffff; font-size: 15px; margin-top: 10px;">
+                Эта игра работает только внутри мессенджера Telegram!
+            </p>
+            <a href="https://t.me" style="
+                margin-top: 20px; 
+                padding: 12px 24px; 
+                background: linear-gradient(90deg, #ff69b4, #00bfff); 
+                color: white; 
+                text-decoration: none; 
+                border-radius: 12px; 
+                font-weight: bold;
+                box-shadow: 0 0 15px rgba(0,191,255,0.4);
+            ">Перейти в бота</a>
+        </div>
+    `;
+    throw new Error("Игра запущена вне Telegram!"); // Останавливаем выполнение остального кода
+}
+
+// Дальше идет ваш обычный код...
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();function startSpinAnimation() {
+    const winMessage = document.getElementById('win-message');
+    const reel = document.getElementById('slot-reel');
+    
+    winMessage.innerText = "Связь с сервером...";
+
+    // Отправляем запрос на локальный сервер Node.js
+    fetch('http://localhost:3000/api/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData: tg.initData }) 
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            winMessage.innerText = `УСПЕХ: Выпал ${data.prize}!`;
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
+    })
+    .catch(err => {
+        // Если сервер еще не запущен в облаке, игра перейдет на локальный оффлайн-тест:
+        determineFinalPrize(); 
+    });
+}
+
+
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // Картинки для прокрутки казино слота
+    const slotItems = [
+        { imgUrl: 'https://postimg.cc', label: 'NFT Будда' },
+{ imgUrl: 'postimg.cc', label: 'Аниме Локация' },
+{ imgUrl: 'postimg.cc', label: 'Перламутровый Тэг' }
+];
+let tgUser = tg.initDataUnsafe?.user || { id: 888, username: "VaporPlayer" };
+if(document.getElementById('username-display')) {
+document.getElementById('username-display').innerText = @${tgUser.username || "Player"};
+}
+let spins = 1;
+function switchScreen(screenName, tabElement) {
+if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+document.querySelectorAll('.tab-bar .tab-item').forEach(t => t.classList.remove('active'));
+document.getElementById(screen-${screenName}).classList.add('active');
+tabElement.classList.add('active');
+}
+function startSpinAnimation() {
+if (spins <= 0) return;
+spins--;
+const reel = document.getElementById('slot-reel');
+const winMessage = document.getElementById('win-message');
+const spinBtn = document.getElementById('btn-trigger');
+spinBtn.disabled = true;
+winMessage.innerText = "";
+if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+let ticks = 0;
+const interval = setInterval(() => {
+const randomItem = slotItems[Math.floor(Math.random() * slotItems.length)];
+reel.src = randomItem.imgUrl;
+if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+ticks++;
+if (ticks >= 20) {
+clearInterval(interval);
+determineFinalPrize();
+}
+}, 90);
+}
+function determineFinalPrize() {
+const reel = document.getElementById('slot-reel');
+const winMessage = document.getElementById('win-message');
+const spinBtn = document.getElementById('btn-trigger');
+const prize = slotItems[Math.floor(Math.random() * slotItems.length)];
+reel.src = prize.imgUrl;
+winMessage.innerText = УСПЕХ: Выпал ${prize.label}! 🔮;
+if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+spinBtn.disabled = false;
+spins = 1; // Возвращаем для бесконечного теста в прототипе
+}
+function simulateStarsPurchase() {
+if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+tg.showAlert("Симуляция: Покупка спина за 2 🌟 Stars");
+}
+
+
